@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Weather App</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .weather-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      width: 360px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    input {
+      width: 80%;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      margin-top: 10px;
+      text-align: center;
+      outline: none;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #fff;
+      color: #333;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #f0f0f0;
+    }
+
+    .result {
+      margin-top: 20px;
+    }
+
+    .temp {
+      font-size: 48px;
+      font-weight: bold;
+    }
+
+    .condition {
+      font-size: 20px;
+      margin-top: 10px;
+    }
+
+    .datetime {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: 500;
+      color: #f1f1f1;
+    }
+
+    .forecast {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .forecast-item {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 10px;
+    }
+
+    .forecast-item img {
+      width: 40px;
+      height: 40px;
+    }
+
+    .forecast-time {
+      font-weight: 600;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="weather-card">
+    <h2>🌤️ Weather App</h2>
+    <div class="datetime" id="datetime">--:-- --, -- -- ----</div>
+
+    <input type="text" id="cityInput" placeholder="Enter city name..." />
+    <button onclick="getWeather()">Get Weather</button>
+
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    // 🕒 Function to update live date and time
+    function updateDateTime() {
+      const now = new Date();
+      const options = {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      };
+      const date = now.toLocaleDateString("en-US", options);
+      const time = now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+      document.getElementById("datetime").innerHTML = `${time} <br> ${date}`;
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // 🌦️ Fetch weather and forecast
+    async function getWeather() {
+      const city = document.getElementById("cityInput").value.trim();
+      const resultDiv = document.getElementById("result");
+
+      if (!city) {
+        resultDiv.innerHTML = "<p>Please enter a city name!</p>";
+        return;
+      }
+
+      const apiKey = "57a2311f73104407aa045249250610";
+      const url = `http://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${city}&days=1&aqi=yes`;
+
+      try {
+        resultDiv.innerHTML = "<p>Loading...</p>";
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.error) {
+          resultDiv.innerHTML = `<p>❌ ${data.error.message}</p>`;
+        } else {
+          const temp = data.current.temp_c;
+          const condition = data.current.condition.text;
+          const icon = data.current.condition.icon;
+          const location = `${data.location.name}, ${data.location.country}`;
+
+          // Select hours for Morning, Afternoon, Evening, Night
+          const hours = data.forecast.forecastday[0].hour;
+          const morning = hours.find((h) => h.time.includes("06:00"));
+          const afternoon = hours.find((h) => h.time.includes("12:00"));
+          const evening = hours.find((h) => h.time.includes("18:00"));
+          const night = hours.find((h) => h.time.includes("22:00"));
+
+          resultDiv.innerHTML = `
+            <div class="temp">${temp}°C</div>
+            <img src="https:${icon}" alt="Weather Icon" />
+            <div class="condition">${condition}</div>
+            <p>${location}</p>
+
+            <h3 style="margin-top:20px;">Today's Forecast</h3>
+            <div class="forecast">
+              ${[morning, afternoon, evening, night]
+                .map(
+                  (slot, index) => `
+                <div class="forecast-item">
+                  <div class="forecast-time">${
+                    ["Morning ☀️", "Afternoon 🌞", "Evening 🌇", "Night 🌙"][
+                      index
+                    ]
+                  }</div>
+                  <img src="https:${slot.condition.icon}" />
+                  <div>${slot.temp_c}°C</div>
+                  <div style="font-size:13px">${slot.condition.text}</div>
+                </div>`
+                )
+                .join("")}
+            </div>
+          `;
+        }
+      } catch (error) {
+        resultDiv.innerHTML = "<p>⚠️ Something went wrong. Try again!</p>";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
